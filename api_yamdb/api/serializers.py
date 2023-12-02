@@ -1,8 +1,16 @@
-from rest_framework import serializers
-from django.db.models import Avg
 import datetime as dt
 
-from reviews.models import Title, Category, Genre, Review, GenreTitle, Comment
+from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
+from django.db.models import Avg
+
+from reviews.models import (
+    Title,
+    Category,
+    Genre,
+    Review,
+    GenreTitle,
+    Comment)
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -40,8 +48,9 @@ class TitleSerializerGet(serializers.ModelSerializer):
 
 class TitleSerializerPost(serializers.ModelSerializer):
     genre = serializers.ListSerializer(child=serializers.CharField())
-    category = serializers.SlugRelatedField(slug_field='slug',
-                                            queryset=Category.objects.all())
+    category = serializers.SlugRelatedField(
+        slug_field='slug',
+        queryset=Category.objects.all())
 
     class Meta:
         fields = ('name', 'year', 'description', 'genre', 'category')
@@ -74,6 +83,7 @@ class TitleSerializerPost(serializers.ModelSerializer):
                 'Год выпуска не может быть больше текущего!')
         return value
 
+
 class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -86,6 +96,15 @@ class ReviewSerializer(serializers.ModelSerializer):
             'pub_date',
         )
         read_only_fields = ('author', 'pub_date')
+
+    def validate(self, data):
+        if self.context.get('request').method == 'POST':
+            author = self.context.get('request').user
+            title_id = self.context('view').kwargs.get('title_id')
+            if Review.objects.filter(author=author, title=title_id).exists():
+                raise ValidationError('К произведению нельзя добавлять более '
+                                      'одного комментария!')
+        return data
 
 
 class CommentSerializer(serializers.ModelSerializer):
