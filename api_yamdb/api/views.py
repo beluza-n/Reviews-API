@@ -1,32 +1,92 @@
-from django.contrib.auth import get_user_model
-from django.shortcuts import get_object_or_404
-from rest_framework import filters, mixins, permissions, viewsets
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework import mixins, permissions, viewsets
 from rest_framework.pagination import PageNumberPagination
+from django.shortcuts import get_object_or_404
 
-from reviews.models import Category, Genre, Review, Title
+from reviews.models import Title, Category, Genre, Review
+from .serializers import (
+    CategorySerializer,
+    TitleSerializerGet,
+    TitleSerializerPost,
+    GenreSerializer,
+    CommentSerializer,
+    ReviewSerializer)
 
-from .serializers import (CategorySerializer, CommentSerializer,
-                          GenreSerializer, ReviewSerializer, TitleSerializer)
 
+class ListCreateDestroyViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet
+):
+    pass
+    
 
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
-    serializer_class = TitleSerializer
     permission_classes = [permissions.AllowAny,]
     pagination_class = PageNumberPagination
 
-class CategoryViewSet(viewsets.ModelViewSet):
-    pass
+    serializer_classes = {
+        'list': TitleSerializerGet,
+        'retrieve': TitleSerializerGet,
+        'create': TitleSerializerPost,
+        'update': TitleSerializerPost,
+        'partial_update': TitleSerializerPost,
+    }
+    default_serializer_class = TitleSerializerGet
+
+    def get_serializer_class(self):
+        return self.serializer_classes.get(self.action,
+                                           self.default_serializer_class)
+
+    def perform_create(self, serializer):
+        return serializer.save()
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        instance = self.perform_create(serializer)
+        instance_serializer = TitleSerializerGet(instance)
+        headers = self.get_success_headers(serializer.data)
+        return Response(instance_serializer.data,
+                        status=status.HTTP_201_CREATED,
+                        headers=headers)
+
+    def perform_update(self, serializer):
+        return serializer.save()
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance,
+                                         data=request.data,
+                                         partial=partial)
+        serializer.is_valid(raise_exception=True)
+        instance = self.perform_update(serializer)
+        instance_serializer = TitleSerializerGet(instance)
+
+        return Response(instance_serializer.data)
 
 
-class GenreViewSet(viewsets.ModelViewSet):
-    pass
+class CategoryViewSet(ListCreateDestroyViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [permissions.AllowAny,]
+    pagination_class = PageNumberPagination
+
+
+class GenreViewSet(ListCreateDestroyViewSet):
+    queryset = Genre.objects.all()
+    serializer_class = GenreSerializer
+    permission_classes = [permissions.AllowAny,]
+    pagination_class = PageNumberPagination
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
-
     serializer_class = ReviewSerializer
-    permission_classes = (...)
+    permission_classes = [permissions.AllowAny,]
 
     def get_title(self):
         title_id = self.kwargs.get('title_id')
@@ -43,7 +103,6 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 
 class CommentViewSet(viewsets.ModelViewSet):
-
     serializer_class = CommentSerializer
     permission_classes = (...)
 
