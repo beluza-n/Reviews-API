@@ -1,15 +1,12 @@
-from rest_framework import viewsets
-from rest_framework import filters
-from rest_framework import mixins
-from rest_framework import permissions
-from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
-
-from reviews.models import Title, Category, Genre
-from .serializers import TitleSerializer, CategorySerializer, GenreSerializer
-
-
+from django.shortcuts import get_object_or_404
+from rest_framework import filters, mixins, permissions, viewsets
 from rest_framework.pagination import PageNumberPagination
+
+from reviews.models import Category, Genre, Review, Title
+
+from .serializers import (CategorySerializer, CommentSerializer,
+                          GenreSerializer, ReviewSerializer, TitleSerializer)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
@@ -24,3 +21,41 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
 class GenreViewSet(viewsets.ModelViewSet):
     pass
+
+
+class ReviewViewSet(viewsets.ModelViewSet):
+
+    serializer_class = ReviewSerializer
+    permission_classes = (...)
+
+    def get_title(self):
+        title_id = self.kwargs.get('title_id')
+        return get_object_or_404(Title, pk=title_id)
+
+    def get_queryset(self):
+        return self.get_title().reviews.select_related('author')
+
+    def perform_create(self, serializer):
+        serializer.save(
+            author=self.request.user,
+            title=self.get_title()
+        )
+
+
+class CommentViewSet(viewsets.ModelViewSet):
+
+    serializer_class = CommentSerializer
+    permission_classes = (...)
+
+    def get_review(self):
+        review_id = self.kwargs.get('review_id')
+        return get_object_or_404(Review, pk=review_id)
+
+    def get_queryset(self):
+        return self.get_review().comments.select_related('author')
+
+    def perform_create(self, serializer):
+        serializer.save(
+            author=self.request.user,
+            review=self.get_review()
+        )
