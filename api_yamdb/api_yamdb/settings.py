@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'reviews.apps.ReviewsConfig',
     'api.apps.ApiConfig',
+    'csv_import.apps.CsvImportConfig',
 ]
 
 MIDDLEWARE = [

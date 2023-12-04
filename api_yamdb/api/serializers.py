@@ -83,7 +83,6 @@ class TitleSerializerPost(serializers.ModelSerializer):
                 'Год выпуска не может быть больше текущего!')
         return value
 
-
 class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:

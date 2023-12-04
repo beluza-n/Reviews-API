@@ -104,7 +104,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
-    permission_classes = (...)
+    permission_classes = [permissions.AllowAny,]
 
     def get_review(self):
         review_id = self.kwargs.get('review_id')
