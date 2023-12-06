@@ -1,6 +1,5 @@
 from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
-
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -13,6 +12,9 @@ class Genre(models.Model):
     def __str__(self):
         return self.slug
 
+    class Meta:
+        ordering = ["slug"]
+
 
 class Category(models.Model):
     name = models.CharField(max_length=256)
@@ -21,6 +23,8 @@ class Category(models.Model):
     def __str__(self):
         return self.slug
 
+    class Meta:
+        ordering = ["slug"]
 
 
 class Title(models.Model):
@@ -36,6 +40,9 @@ class Title(models.Model):
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        ordering = ["name"]
 
 
 class GenreTitle(models.Model):
@@ -75,7 +82,6 @@ class Review(models.Model):
         related_name='reviews'
     )
 
-
     class Meta:
         constraints = (
             models.UniqueConstraint(
@@ -86,8 +92,6 @@ class Review(models.Model):
                 name='unique_author_title'
             ),
         )
-
-
 
 
 class Comment(models.Model):
@@ -106,4 +110,3 @@ class Comment(models.Model):
         on_delete=models.CASCADE,
         related_name='comments'
     )
-
