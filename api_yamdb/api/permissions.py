@@ -6,7 +6,8 @@ class IsAdmin(permissions.BasePermission):
 
     def has_permission(self, request, view):
         user = request.user
-        return user.is_superuser or user.role == 'admin'
+        return user.is_authenticated and (
+                user.is_superuser or user.is_admin)
 
 
 class AdminOrReadOnly(permissions.BasePermission):
@@ -15,16 +16,19 @@ class AdminOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
         user = request.user
         return (request.method in permissions.SAFE_METHODS
-                or user.role == 'admin'
-                or user.is_superuser)
+                or (user.is_authenticated and user.is_admin))
 
 
-class AuthorOrModerator(permissions.BasePermission):
+class AuthorModeratorOrReadOnly(permissions.BasePermission):
     message = 'Изменение чужого контента запрещено!'
+
+    def has_permission(self, request, view):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        return request.user.is_authenticated
 
     def has_object_permission(self, request, view, obj):
         user = request.user
-        return (user.role == 'moderator'
-                or user.role == 'admin'
-                or user.is_superuser
+        return (user.role.is_moderator
+                or user.is_admin
                 or obj.author == user)

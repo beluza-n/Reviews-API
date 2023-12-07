@@ -4,9 +4,9 @@ from rest_framework import mixins, viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action, api_view
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.authtoken.views import ObtainAuthToken
-from rest_framework.authtoken.models import Token
+from rest_framework.views import APIView
 from rest_framework.filters import SearchFilter
+from rest_framework_simplejwt.tokens import AccessToken
 from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
 from django.contrib.auth import get_user_model
@@ -17,7 +17,7 @@ from rest_framework.permissions import (
 
 
 from reviews.models import Title, Category, Genre, Review
-from .permissions import IsAdmin, AdminOrReadOnly, AuthorOrModerator
+from .permissions import IsAdmin, AdminOrReadOnly, AuthorModeratorOrReadOnly
 from api_yamdb.settings import DEFAULT_FROM_EMAIL
 from .serializers import (
     CategorySerializer,
@@ -206,15 +206,18 @@ def api_signup(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class CustomAuthToken(ObtainAuthToken):
+class CustomAuthToken(APIView):
 
-    def post(self, request, *args, **kwargs):
-        serializer = AuthSerializer(
-            data=request.data,
-            context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data['user']
-        token, created = Token.objects.get_or_create(user=user)
-        return Response({
-            'token': token.key,
-        })
+    def post(self, request):
+        serializer = AuthSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            username = serializer.data["username"]
+            confirmation_code = serializer.data["confirmation_code"]
+            user = get_object_or_404(User, username=username)
+            if user.confirmation_code != confirmation_code:
+                return Response(
+                    serializer.errors,
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            token = AccessToken.for_user(user)
+            return Response({"token": str(token)}, status=status.HTTP_200_OK)

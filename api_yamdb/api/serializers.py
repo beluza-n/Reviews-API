@@ -6,8 +6,6 @@ from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.db.models import Avg
 from django.contrib.auth import get_user_model
-from django.utils.translation import gettext_lazy as _
-from django.shortcuts import get_object_or_404
 
 from reviews.models import (
     Title,
@@ -151,42 +149,13 @@ class SignupSerializer(
         model = User
 
 
-class AuthSerializer(
-    ValidateUsernameMixin,
-    serializers.Serializer
-):
-    username = serializers.CharField(
-        label=_("Username"),
-        write_only=True
-    )
-    confirmation_code = serializers.CharField(
-        label=_("Confirmation code"),
-        style={'input_type': 'password'},
-        write_only=True
-    )
-    token = serializers.CharField(
-        label=_("Token"),
-        read_only=True
-    )
+class AuthSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(max_length=150)
+    confirmation_code = serializers.CharField(max_length=27)
 
-    def validate(self, attrs):
-        username = attrs.get('username')
-        confirmation_code = attrs.get('confirmation_code')
-
-        if username and confirmation_code:
-            user = get_object_or_404(User, username=username)
-
-            if user.confirmation_code != confirmation_code:
-                msg = {
-                    'confirmation_code': 'Wrong code!'}
-                raise ValidationError(msg, code='authorization')
-
-        else:
-            msg = _('Must include "username" and "confirmation_code".')
-            raise serializers.ValidationError(msg, code='authorization')
-
-        attrs['user'] = user
-        return attrs
+    class Meta:
+        model = User
+        fields = ("username", "confirmation_code")
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):

@@ -20,7 +20,15 @@ class CustomUser(AbstractUser):
         choices=Role.choices,
         default=Role.User,
     )
-    confirmation_code = models.SlugField(max_length=20, blank=True)
+    confirmation_code = models.SlugField(max_length=27, blank=True)
+
+    @property
+    def is_admin(self):
+        return self.role == 'admin' or self.is_superuser
+
+    @property
+    def is_moderator(self):
+        return self.role == CustomUser.Role.Moderator
 
     class Meta:
         ordering = ["username"]
