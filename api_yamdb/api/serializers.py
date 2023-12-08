@@ -68,7 +68,11 @@ class TitleSerializerGet(serializers.ModelSerializer):
 
 
 class TitleSerializerPost(serializers.ModelSerializer):
-    genre = serializers.ListSerializer(child=serializers.CharField())
+    genre = serializers.SlugRelatedField(
+        slug_field='slug',
+        queryset=Genre.objects.all(),
+        many=True)
+    
     category = serializers.SlugRelatedField(
         slug_field='slug',
         queryset=Category.objects.all())
@@ -81,10 +85,7 @@ class TitleSerializerPost(serializers.ModelSerializer):
     def create(self, validated_data):
         genres = validated_data.pop('genre')
         title = super().create(validated_data)
-        for genre in genres:
-            current_genre = Genre.objects.get(slug=genre)
-            GenreTitle.objects.create(
-                genre=current_genre, title=title)
+        title.genre.set(genres)
         return title
 
     def update(self, instance, validated_data):
@@ -95,10 +96,9 @@ class TitleSerializerPost(serializers.ModelSerializer):
         genres = validated_data.pop('genre')
         title = super().update(instance, validated_data)
         for genre in genres:
-            current_genre = Genre.objects.get(slug=genre)
             GenreTitle.objects.filter(title=title).delete()
             GenreTitle.objects.create(
-                genre=current_genre, title=title)
+                genre=genre, title=title)
         return title
 
     def validate_year(self, value):
@@ -109,13 +109,15 @@ class TitleSerializerPost(serializers.ModelSerializer):
         return value
     
     def validate_genre(self, value):
+        clear_genre = []
         for genre in value:
             try:
                 current_genre = Genre.objects.get(slug=genre)
             except Genre.DoesNotExist:
                 raise serializers.ValidationError(
                     'Такого жанра нет')
-        return value
+            clear_genre.append(current_genre)
+        return clear_genre
 
 
 class ReviewSerializer(serializers.ModelSerializer):

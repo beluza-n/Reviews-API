@@ -45,6 +45,7 @@ class ListCreateDestroyViewSet(
 
 
 class TitleViewSet(viewsets.ModelViewSet):
+    http_method_names = ["get", "post", "patch", "delete"]
     queryset = Title.objects.all()
     permission_classes = [IsAuthenticatedOrReadOnly, AdminOrReadOnly]
     filter_backends = (DjangoFilterBackend,)
@@ -57,7 +58,7 @@ class TitleViewSet(viewsets.ModelViewSet):
         'retrieve': TitleSerializerGet,
         'create': TitleSerializerPost,
         'update': TitleSerializerPost,
-        'partial_update': TitleSerializerPost,
+        #'partial_update': TitleSerializerPost,
     }
     default_serializer_class = TitleSerializerGet
 

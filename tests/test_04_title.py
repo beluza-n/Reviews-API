@@ -56,7 +56,11 @@ class Test04TitleAPI:
             'category': categories[0]['slug'],
             'description': 'Рон Свонсон рекомендует.'
         }
+        print("Начальные данные:", post_data_1)
+        print("Админ-клиент:", admin_client)
         response = admin_client.post(self.TITLES_URL, data=post_data_1)
+        print(1111111111111111111111111111111111)
+        print("Респонс:", response.__dict__)
         assert response.status_code == HTTPStatus.CREATED, (
             f'Если POST-запрос администратора к `{self.TITLES_URL}` '
             'содержит корректные данные - должен вернуться ответ со статусом '
