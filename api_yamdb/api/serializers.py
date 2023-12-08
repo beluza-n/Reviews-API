@@ -46,6 +46,7 @@ class TitleSerializerGet(serializers.ModelSerializer):
     genre = GenreSerializer(many=True)
     category = CategorySerializer()
     rating = serializers.SerializerMethodField()
+    description = serializers.SerializerMethodField()
 
     class Meta:
         fields = ('id', 'name', 'year', 'rating',
@@ -59,6 +60,11 @@ class TitleSerializerGet(serializers.ModelSerializer):
             return round(list(qs.values())[0])
         else:
             return None
+        
+    def get_description(self, instance):
+        if instance.description is None:
+            return ''
+        return instance.description
 
 
 class TitleSerializerPost(serializers.ModelSerializer):
@@ -82,6 +88,10 @@ class TitleSerializerPost(serializers.ModelSerializer):
         return title
 
     def update(self, instance, validated_data):
+        if 'genre' not in self.initial_data:
+            title = super().update(instance, validated_data)
+            return title
+        
         genres = validated_data.pop('genre')
         title = super().update(instance, validated_data)
         for genre in genres:
@@ -97,6 +107,16 @@ class TitleSerializerPost(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 'Год выпуска не может быть больше текущего!')
         return value
+    
+    def validate_genre(self, value):
+        for genre in value:
+            try:
+                current_genre = Genre.objects.get(slug=genre)
+            except Genre.DoesNotExist:
+                raise serializers.ValidationError(
+                    'Такого жанра нет')
+        return value
+
 
 class ReviewSerializer(serializers.ModelSerializer):
 

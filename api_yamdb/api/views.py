@@ -14,7 +14,7 @@ from rest_framework.permissions import (
     IsAuthenticatedOrReadOnly,
     IsAuthenticated
 )
-
+from django_filters.rest_framework import DjangoFilterBackend
 
 from reviews.models import Title, Category, Genre, Review
 from .permissions import IsAdmin, AdminOrReadOnly, AuthorModeratorOrReadOnly
@@ -30,7 +30,7 @@ from .serializers import (
     SignupSerializer,
     AuthSerializer,
 )
-
+from .filters import TitleFilter
 
 User = get_user_model()
 
@@ -47,8 +47,11 @@ class ListCreateDestroyViewSet(
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
     permission_classes = [IsAuthenticatedOrReadOnly, AdminOrReadOnly]
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = TitleFilter
     pagination_class = PageNumberPagination
-
+    ordering = ('year',) 
+    
     serializer_classes = {
         'list': TitleSerializerGet,
         'retrieve': TitleSerializerGet,
