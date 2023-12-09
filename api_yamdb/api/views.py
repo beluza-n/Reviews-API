@@ -17,7 +17,11 @@ from rest_framework.permissions import (
 from django_filters.rest_framework import DjangoFilterBackend
 
 from reviews.models import Title, Category, Genre, Review
-from .permissions import IsAdmin, AdminOrReadOnly, AuthorModeratorOrReadOnly
+from .permissions import (
+    IsAdmin,
+    IsAdminUserOrReadOnly,
+    ReviewCommentPermissions
+)
 from api_yamdb.settings import DEFAULT_FROM_EMAIL
 from .serializers import (
     CategorySerializer,
@@ -47,18 +51,18 @@ class ListCreateDestroyViewSet(
 class TitleViewSet(viewsets.ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete"]
     queryset = Title.objects.all()
-    permission_classes = [IsAuthenticatedOrReadOnly, AdminOrReadOnly]
+    permission_classes = [IsAuthenticatedOrReadOnly, IsAdminUserOrReadOnly]
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitleFilter
     pagination_class = PageNumberPagination
-    ordering = ('year',) 
-    
+    ordering = ('year',)
+
     serializer_classes = {
         'list': TitleSerializerGet,
         'retrieve': TitleSerializerGet,
         'create': TitleSerializerPost,
         'update': TitleSerializerPost,
-        #'partial_update': TitleSerializerPost,
+        'partial_update': TitleSerializerPost,
     }
     default_serializer_class = TitleSerializerGet
 
@@ -98,7 +102,7 @@ class TitleViewSet(viewsets.ModelViewSet):
 class CategoryViewSet(ListCreateDestroyViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [IsAuthenticatedOrReadOnly, AdminOrReadOnly]
+    permission_classes = [IsAuthenticatedOrReadOnly, IsAdminUserOrReadOnly]
     pagination_class = PageNumberPagination
     filter_backends = (SearchFilter,)
     lookup_field = 'slug'
@@ -108,7 +112,7 @@ class CategoryViewSet(ListCreateDestroyViewSet):
 class GenreViewSet(ListCreateDestroyViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly, AdminOrReadOnly]
+    permission_classes = [IsAuthenticatedOrReadOnly, IsAdminUserOrReadOnly]
     pagination_class = PageNumberPagination
     filter_backends = (SearchFilter,)
     lookup_field = 'slug'
@@ -117,14 +121,20 @@ class GenreViewSet(ListCreateDestroyViewSet):
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly,]
+    permission_classes = [ReviewCommentPermissions]
+    http_method_names = ['get', 'post', 'delete', 'patch']
 
     def get_title(self):
         title_id = self.kwargs.get('title_id')
         return get_object_or_404(Title, pk=title_id)
 
+    def perform_update(self, serializer):
+        review = get_object_or_404(self.get_queryset(), pk=self.kwargs["pk"])
+        self.check_object_permissions(self.request, review)
+        return serializer.save()
+
     def get_queryset(self):
-        return self.get_title().reviews.select_related('author')
+        return self.get_title().reviews.all()
 
     def perform_create(self, serializer):
         serializer.save(
@@ -135,14 +145,15 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly,]
+    permission_classes = [ReviewCommentPermissions]
+    http_method_names = ['get', 'post', 'delete', 'patch']
 
     def get_review(self):
         review_id = self.kwargs.get('review_id')
         return get_object_or_404(Review, pk=review_id)
 
     def get_queryset(self):
-        return self.get_review().comments.select_related('author')
+        return self.get_review().comments.all()
 
     def perform_create(self, serializer):
         serializer.save(

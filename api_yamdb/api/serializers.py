@@ -1,19 +1,20 @@
 import re
 import datetime as dt
 
+from django.db.models import Avg
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from django.db.models import Avg
 from django.contrib.auth import get_user_model
 
 from reviews.models import (
-    Title,
     Category,
+    Comment,
     Genre,
-    Review,
     GenreTitle,
-    Comment)
+    Review,
+    Title
+)
 
 
 User = get_user_model()
@@ -60,7 +61,7 @@ class TitleSerializerGet(serializers.ModelSerializer):
             return round(list(qs.values())[0])
         else:
             return None
-        
+
     def get_description(self, instance):
         if instance.description is None:
             return ''
@@ -72,7 +73,10 @@ class TitleSerializerPost(serializers.ModelSerializer):
         slug_field='slug',
         queryset=Genre.objects.all(),
         many=True)
-    
+
+    category = serializers.SlugRelatedField(
+        slug_field='slug',
+        queryset=Category.objects.all())
     category = serializers.SlugRelatedField(
         slug_field='slug',
         queryset=Category.objects.all())
@@ -92,7 +96,7 @@ class TitleSerializerPost(serializers.ModelSerializer):
         if 'genre' not in self.initial_data:
             title = super().update(instance, validated_data)
             return title
-        
+
         genres = validated_data.pop('genre')
         title = super().update(instance, validated_data)
         for genre in genres:
@@ -107,7 +111,7 @@ class TitleSerializerPost(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 'Год выпуска не может быть больше текущего!')
         return value
-    
+
     def validate_genre(self, value):
         clear_genre = []
         for genre in value:
@@ -121,6 +125,10 @@ class TitleSerializerPost(serializers.ModelSerializer):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
+    author = serializers.SlugRelatedField(
+        read_only=True,
+        slug_field='username'
+    )
 
     class Meta:
         model = Review
@@ -131,12 +139,11 @@ class ReviewSerializer(serializers.ModelSerializer):
             'score',
             'pub_date',
         )
-        read_only_fields = ('author', 'pub_date')
 
     def validate(self, data):
-        if self.context.get('request').method == 'POST':
-            author = self.context.get('request').user
-            title_id = self.context('view').kwargs.get('title_id')
+        if self.context['request'].method == 'POST':
+            author = self.context['request'].user
+            title_id = self.context['view'].kwargs.get('title_id')
             if Review.objects.filter(author=author, title=title_id).exists():
                 raise ValidationError('К произведению нельзя добавлять более '
                                       'одного комментария!')
@@ -144,6 +151,10 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    author = serializers.SlugRelatedField(
+        read_only=True,
+        slug_field='username'
+    )
 
     class Meta:
         model = Comment
@@ -153,7 +164,6 @@ class CommentSerializer(serializers.ModelSerializer):
             'author',
             'pub_date',
         )
-        read_only_fields = ('author', 'pub_date')
 
 
 class SignupSerializer(

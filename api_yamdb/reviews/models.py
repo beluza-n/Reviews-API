@@ -83,6 +83,7 @@ class Review(models.Model):
     )
 
     class Meta:
+        ordering = ('-pub_date',)
         constraints = (
             models.UniqueConstraint(
                 fields=[
@@ -110,3 +111,6 @@ class Comment(models.Model):
         on_delete=models.CASCADE,
         related_name='comments'
     )
+
+    class Meta:
+        ordering = ('-pub_date',)

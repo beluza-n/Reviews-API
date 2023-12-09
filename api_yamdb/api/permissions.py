@@ -1,34 +1,37 @@
-from rest_framework import permissions
+from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 
-class IsAdmin(permissions.BasePermission):
+class IsAdmin(BasePermission):
     message = 'Недостаточно прав для этого действия!'
 
     def has_permission(self, request, view):
         user = request.user
-        return user.is_authenticated and (
-                user.is_superuser or user.is_admin)
+        return (user.is_authenticated
+                and (user.is_superuser or user.is_admin))
 
 
-class AdminOrReadOnly(permissions.BasePermission):
+class ReviewCommentPermissions(BasePermission):
     message = 'Недостаточно прав для этого действия!'
 
     def has_permission(self, request, view):
-        user = request.user
-        return (request.method in permissions.SAFE_METHODS
-                or (user.is_authenticated and user.is_admin))
-
-
-class AuthorModeratorOrReadOnly(permissions.BasePermission):
-    message = 'Изменение чужого контента запрещено!'
-
-    def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
+        if request.method in SAFE_METHODS:
             return True
         return request.user.is_authenticated
 
     def has_object_permission(self, request, view, obj):
-        user = request.user
-        return (user.role.is_moderator
-                or user.is_admin
-                or obj.author == user)
+        if request.method in SAFE_METHODS:
+            return True
+        return (
+            obj.author == request.user
+            or request.user.is_admin
+            or request.user.is_moderator
+        )
+
+
+class IsAdminUserOrReadOnly(IsAdmin):
+    message = 'Недостаточно прав для этого действия!'
+
+    def has_permission(self, request, view):
+        if request.method in SAFE_METHODS:
+            return True
+        return super().has_permission(request, view)

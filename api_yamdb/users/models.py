@@ -28,7 +28,7 @@ class CustomUser(AbstractUser):
 
     @property
     def is_moderator(self):
-        return self.role == CustomUser.Role.Moderator
+        return self.role == 'moderator'
 
     class Meta:
         ordering = ["username"]
