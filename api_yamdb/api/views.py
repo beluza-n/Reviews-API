@@ -128,11 +128,6 @@ class ReviewViewSet(viewsets.ModelViewSet):
         title_id = self.kwargs.get('title_id')
         return get_object_or_404(Title, pk=title_id)
 
-    def perform_update(self, serializer):
-        review = get_object_or_404(self.get_queryset(), pk=self.kwargs["pk"])
-        self.check_object_permissions(self.request, review)
-        return serializer.save()
-
     def get_queryset(self):
         return self.get_title().reviews.all()
 
@@ -178,18 +173,14 @@ class UsersViewSet(viewsets.ModelViewSet):
         url_path='me',
         url_name='me')
     def my_user(self, request):
-        user = User.objects.get(username=request.user.username)
+        user = request.user
         if request.method == 'PATCH':
             if 'role' in request.data:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
             serializer = UserSerializer(user, data=request.data, partial=True)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data)
-            return Response(
-                serializer.errors,
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data)
         serializer = UserSerializer(user)
         return Response(serializer.data)
 
@@ -198,41 +189,41 @@ class UsersViewSet(viewsets.ModelViewSet):
 def api_signup(request):
     user = User.objects.filter(
         username=request.data.get('username'),
-        email=request.data.get('email'))
+        email=request.data.get('email')
+    ).first()
     if user:
         serializer = SignupSerializer(
-            user[0],
+            user,
             data=request.data,
             partial=True)
     else:
         serializer = SignupSerializer(data=request.data)
-    if serializer.is_valid():
-        code = token_urlsafe(20)
-        serializer.save(confirmation_code=code)
-        send_mail(
-            subject='Ваш код аутентификации',
-            message='Сохраните код! Он понадобится вам для получения токена.\n'
-                    f'confirmation_code:\n{code}\n',
-            from_email=DEFAULT_FROM_EMAIL,
-            recipient_list=[serializer.data['email']],
-            fail_silently=False,
-        )
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    serializer.is_valid(raise_exception=True)
+    code = token_urlsafe(20)
+    serializer.save(confirmation_code=code)
+    send_mail(
+        subject='Ваш код аутентификации',
+        message='Сохраните код! Он понадобится вам для получения токена.\n'
+                f'confirmation_code:\n{code}\n',
+        from_email=DEFAULT_FROM_EMAIL,
+        recipient_list=[serializer.validated_data['email']],
+        fail_silently=False,
+    )
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class CustomAuthToken(APIView):
 
     def post(self, request):
         serializer = AuthSerializer(data=request.data)
-        if serializer.is_valid(raise_exception=True):
-            username = serializer.data["username"]
-            confirmation_code = serializer.data["confirmation_code"]
-            user = get_object_or_404(User, username=username)
-            if user.confirmation_code != confirmation_code:
-                return Response(
-                    serializer.errors,
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            token = AccessToken.for_user(user)
-            return Response({"token": str(token)}, status=status.HTTP_200_OK)
+        serializer.is_valid(raise_exception=True)
+        username = serializer.validated_data["username"]
+        confirmation_code = serializer.validated_data["confirmation_code"]
+        user = get_object_or_404(User, username=username)
+        if user.confirmation_code != confirmation_code:
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        token = AccessToken.for_user(user)
+        return Response({"token": str(token)}, status=status.HTTP_200_OK)
