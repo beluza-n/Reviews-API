@@ -1,17 +1,14 @@
-import re
-import datetime as dt
-
-from django.db.models import Avg
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 
+from .mixins import ValidateUsernameMixin
 from reviews.models import (
     Category,
     Comment,
     Genre,
-    GenreTitle,
     Review,
     Title
 )
@@ -20,52 +17,31 @@ from reviews.models import (
 User = get_user_model()
 
 
-class ValidateUsernameMixin(object):
-    def validate_username(self, value):
-        pattern = re.compile(r'^[\w.@+-]+\Z')
-        if not pattern.match(value) or value == 'me' or len(value) > 150:
-            raise serializers.ValidationError(
-                'Недопустимое имя пользователя!')
-        return value
-
-
 class CategorySerializer(serializers.ModelSerializer):
 
     class Meta:
-        fields = ('name', 'slug')
+        exclude = ('id', )
         model = Category
 
 
 class GenreSerializer(serializers.ModelSerializer):
 
     class Meta:
-        fields = ('name', 'slug')
+        exclude = ('id', )
         model = Genre
 
 
 class TitleSerializerGet(serializers.ModelSerializer):
     genre = GenreSerializer(many=True)
     category = CategorySerializer()
-    rating = serializers.SerializerMethodField()
-    description = serializers.SerializerMethodField()
+    description = serializers.CharField()
+    rating = serializers.IntegerField(default=None)
 
     class Meta:
         fields = ('id', 'name', 'year', 'rating',
                   'description', 'genre', 'category')
         model = Title
         read_only_fields = ('rating',)
-
-    def get_rating(self, obj):
-        qs = obj.reviews.all().aggregate(rating=Avg('score'))
-        if qs['rating'] is not None:
-            return round(list(qs.values())[0])
-        else:
-            return None
-
-    def get_description(self, instance):
-        if instance.description is None:
-            return ''
-        return instance.description
 
 
 class TitleSerializerPost(serializers.ModelSerializer):
@@ -77,37 +53,18 @@ class TitleSerializerPost(serializers.ModelSerializer):
     category = serializers.SlugRelatedField(
         slug_field='slug',
         queryset=Category.objects.all())
-    category = serializers.SlugRelatedField(
-        slug_field='slug',
-        queryset=Category.objects.all())
 
     class Meta:
         fields = ('name', 'year', 'description', 'genre', 'category')
         model = Title
         optional_fields = ['description', ]
 
-    def create(self, validated_data):
-        genres = validated_data.pop('genre')
-        title = super().create(validated_data)
-        title.genre.set(genres)
-        return title
-
-    def update(self, instance, validated_data):
-        if 'genre' not in self.initial_data:
-            title = super().update(instance, validated_data)
-            return title
-
-        genres = validated_data.pop('genre')
-        title = super().update(instance, validated_data)
-        for genre in genres:
-            GenreTitle.objects.filter(title=title).delete()
-            GenreTitle.objects.create(
-                genre=genre, title=title)
-        return title
+    def to_representation(self, value):
+        return TitleSerializerGet(value).data
 
     def validate_year(self, value):
-        year = dt.date.today().year
-        if value > year:
+        current_year = timezone.now().year
+        if value > current_year:
             raise serializers.ValidationError(
                 'Год выпуска не может быть больше текущего!')
         return value

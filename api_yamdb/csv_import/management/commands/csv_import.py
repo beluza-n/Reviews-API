@@ -7,7 +7,6 @@ from reviews.models import (
     Category,
     Genre,
     Review,
-    GenreTitle,
     Comment)
 
 User = get_user_model()
@@ -90,7 +89,7 @@ class Command(BaseCommand):
         Title.objects.bulk_create(bulk_list)
 
     def load_genre_title_data(self, filepath):
-        if GenreTitle.objects.exists():
+        if Title.genre.through.objects.exists():
             print('Данные по жанрам и произведениям уже загружены...выходим.')
             print(ALREDY_LOADED_ERROR_MESSAGE)
             return
@@ -99,12 +98,12 @@ class Command(BaseCommand):
 
         bulk_list = list()
         for row in DictReader(open(filepath, encoding="utf-8-sig")):
-            renre_title = GenreTitle(
+            genre_title = Title.genre.through(
                 id=row['id'],
                 title_id=row['title_id'],
                 genre_id=row['genre_id'])
-            bulk_list.append(renre_title)
-        GenreTitle.objects.bulk_create(bulk_list)
+            bulk_list.append(genre_title)
+        Title.genre.through.objects.bulk_create(bulk_list)
 
     def load_users_data(self, filepath):
         if User.objects.exists():
