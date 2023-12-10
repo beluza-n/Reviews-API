@@ -1,6 +1,7 @@
 from secrets import token_urlsafe
-
-from rest_framework import mixins, viewsets, status
+from django.db.models import Avg
+from django.db.models import IntegerField
+from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action, api_view
 from rest_framework.pagination import PageNumberPagination
@@ -35,88 +36,36 @@ from .serializers import (
     AuthSerializer,
 )
 from .filters import TitleFilter
+from .mixins import NameViewSetMixin
 
 User = get_user_model()
 
 
-class ListCreateDestroyViewSet(
-    mixins.ListModelMixin,
-    mixins.CreateModelMixin,
-    mixins.DestroyModelMixin,
-    viewsets.GenericViewSet
-):
-    pass
-
-
 class TitleViewSet(viewsets.ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete"]
-    queryset = Title.objects.all()
+    queryset = (Title.objects.annotate(
+        rating=Avg('reviews__score', output_field=IntegerField()))
+        .order_by('year'))
     permission_classes = [IsAuthenticatedOrReadOnly, IsAdminUserOrReadOnly]
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitleFilter
     pagination_class = PageNumberPagination
     ordering = ('year',)
 
-    serializer_classes = {
-        'list': TitleSerializerGet,
-        'retrieve': TitleSerializerGet,
-        'create': TitleSerializerPost,
-        'update': TitleSerializerPost,
-        'partial_update': TitleSerializerPost,
-    }
-    default_serializer_class = TitleSerializerGet
-
     def get_serializer_class(self):
-        return self.serializer_classes.get(self.action,
-                                           self.default_serializer_class)
-
-    def perform_create(self, serializer):
-        return serializer.save()
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        instance = self.perform_create(serializer)
-        instance_serializer = TitleSerializerGet(instance)
-        headers = self.get_success_headers(serializer.data)
-        return Response(instance_serializer.data,
-                        status=status.HTTP_201_CREATED,
-                        headers=headers)
-
-    def perform_update(self, serializer):
-        return serializer.save()
-
-    def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
-        instance = self.get_object()
-        serializer = self.get_serializer(instance,
-                                         data=request.data,
-                                         partial=partial)
-        serializer.is_valid(raise_exception=True)
-        instance = self.perform_update(serializer)
-        instance_serializer = TitleSerializerGet(instance)
-
-        return Response(instance_serializer.data)
+        if self.request.method in ['POST', 'PATCH']:
+            return TitleSerializerPost
+        return TitleSerializerGet
 
 
-class CategoryViewSet(ListCreateDestroyViewSet):
+class CategoryViewSet(NameViewSetMixin):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [IsAuthenticatedOrReadOnly, IsAdminUserOrReadOnly]
-    pagination_class = PageNumberPagination
-    filter_backends = (SearchFilter,)
-    lookup_field = 'slug'
-    search_fields = ('name',)
 
 
-class GenreViewSet(ListCreateDestroyViewSet):
+class GenreViewSet(NameViewSetMixin):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly, IsAdminUserOrReadOnly]
-    pagination_class = PageNumberPagination
-    filter_backends = (SearchFilter,)
-    lookup_field = 'slug'
-    search_fields = ('name',)
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
