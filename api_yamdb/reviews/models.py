@@ -44,7 +44,7 @@ def validate_year(value):
 class Title(models.Model):
     name = models.CharField(max_length=256, verbose_name='title of the work')
     year = models.IntegerField(
-        validators=[validate_year,],
+        validators=[validate_year, ],
         verbose_name='release year')
     description = models.TextField(
         blank=True,
