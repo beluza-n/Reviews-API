@@ -8,8 +8,8 @@ User = get_user_model()
 
 
 class NameInfo(models.Model):
-    name = models.CharField(max_length=256)
-    slug = models.SlugField(unique=True, max_length=50)
+    name = models.CharField(max_length=256, verbose_name='abstract name')
+    slug = models.SlugField(unique=True, max_length=50, verbose_name='abstract slug')
 
     class Meta:
         abstract = True
@@ -66,11 +66,12 @@ class Title(models.Model):
 
 class Review(models.Model):
 
-    text = models.TextField()
+    text = models.TextField(verbose_name='text of the review')
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='reviews'
+        related_name='reviews',
+        verbose_name='author of the review'
     )
     score = models.PositiveIntegerField(
         validators=[
@@ -82,15 +83,18 @@ class Review(models.Model):
                 10,
                 message='Оценка выше 10!'
             ),
-        ]
+        ],
+        verbose_name='score of the review'
     )
     pub_date = models.DateTimeField(
         auto_now_add=True,
+        verbose_name='publication date'
     )
     title = models.ForeignKey(
         Title,
         on_delete=models.CASCADE,
-        related_name='reviews'
+        related_name='reviews',
+        verbose_name='title described in review'
     )
 
     class Meta:
@@ -110,19 +114,22 @@ class Review(models.Model):
 
 class Comment(models.Model):
 
-    text = models.TextField()
+    text = models.TextField(verbose_name='text of the comment')
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='comments'
+        related_name='comments',
+        verbose_name='author of the review'
     )
     pub_date = models.DateTimeField(
         auto_now_add=True,
+        verbose_name='publication date'
     )
     review = models.ForeignKey(
         Review,
         on_delete=models.CASCADE,
-        related_name='comments'
+        related_name='comments',
+        verbose_name='review described in comment'
     )
 
     class Meta:

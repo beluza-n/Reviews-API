@@ -2,7 +2,6 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import get_user_model
-from django.utils import timezone
 
 from .mixins import ValidateUsernameMixin
 from reviews.models import (
@@ -61,13 +60,6 @@ class TitleSerializerPost(serializers.ModelSerializer):
 
     def to_representation(self, value):
         return TitleSerializerGet(value).data
-
-    def validate_year(self, value):
-        current_year = timezone.now().year
-        if value > current_year:
-            raise serializers.ValidationError(
-                'Год выпуска не может быть больше текущего!')
-        return value
 
 
 class ReviewSerializer(serializers.ModelSerializer):
