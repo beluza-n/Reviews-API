@@ -1,8 +1,8 @@
 from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.contrib.auth import get_user_model
-from django.utils import timezone
-from django.core.exceptions import ValidationError
+
+from .validators import validate_year
 
 User = get_user_model()
 
@@ -13,6 +13,8 @@ class NameInfo(models.Model):
 
     class Meta:
         abstract = True
+        verbose_name = 'nameInfo'
+        verbose_name_plural = 'nameInfo'
 
     def __str__(self):
         return self.slug
@@ -32,13 +34,6 @@ class Category(NameInfo):
         verbose_name = 'category'
         verbose_name_plural = 'categories'
         ordering = ["slug"]
-
-
-def validate_year(value):
-    current_year = timezone.now().year
-    if value > current_year:
-        raise ValidationError(
-            'Год выпуска не может быть больше текущего!')
 
 
 class Title(models.Model):

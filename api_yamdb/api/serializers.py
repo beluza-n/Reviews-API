@@ -69,17 +69,6 @@ class TitleSerializerPost(serializers.ModelSerializer):
                 'Год выпуска не может быть больше текущего!')
         return value
 
-    def validate_genre(self, value):
-        clear_genre = []
-        for genre in value:
-            try:
-                current_genre = Genre.objects.get(slug=genre)
-            except Genre.DoesNotExist:
-                raise serializers.ValidationError(
-                    'Такого жанра нет')
-            clear_genre.append(current_genre)
-        return clear_genre
-
 
 class ReviewSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
