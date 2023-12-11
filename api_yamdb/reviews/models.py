@@ -9,7 +9,11 @@ User = get_user_model()
 
 class NameInfo(models.Model):
     name = models.CharField(max_length=256, verbose_name='abstract name')
-    slug = models.SlugField(unique=True, max_length=50, verbose_name='abstract slug')
+    slug = models.SlugField(
+        unique=True,
+        max_length=50,
+        verbose_name='abstract slug'
+    )
 
     class Meta:
         abstract = True
