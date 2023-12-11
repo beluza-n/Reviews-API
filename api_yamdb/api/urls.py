@@ -30,7 +30,7 @@ v1_router.register(
 
 auth_urls = [
     path('signup/', api_signup, name='signup'),
-    path('token/', CustomAuthToken.as_view())
+    path('token/', CustomAuthToken.as_view(), name='token')
 ]
 
 urlpatterns = [
