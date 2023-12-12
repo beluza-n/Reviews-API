@@ -2,7 +2,7 @@ from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.contrib.auth import get_user_model
 
-from .validators import validate_year
+from .validators import title_year_validation
 
 User = get_user_model()
 
@@ -43,7 +43,9 @@ class Category(NameInfo):
 class Title(models.Model):
     name = models.CharField(max_length=256, verbose_name='title of the work')
     year = models.IntegerField(
-        validators=[validate_year, ],
+        validators=[title_year_validation, ],
+        blank=False,
+        null=False,
         verbose_name='release year')
     description = models.TextField(
         blank=True,

@@ -11,6 +11,7 @@ from reviews.models import (
     Review,
     Title
 )
+from reviews.validators import title_year_validation
 
 
 User = get_user_model()
@@ -60,6 +61,9 @@ class TitleSerializerPost(serializers.ModelSerializer):
 
     def to_representation(self, value):
         return TitleSerializerGet(value).data
+
+    def validate_year(self):
+        title_year_validation(self.year)
 
 
 class ReviewSerializer(serializers.ModelSerializer):
