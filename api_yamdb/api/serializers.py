@@ -62,8 +62,9 @@ class TitleSerializerPost(serializers.ModelSerializer):
     def to_representation(self, value):
         return TitleSerializerGet(value).data
 
-    def validate_year(self):
-        title_year_validation(self.year)
+    def validate_year(self, value):
+        title_year_validation(value)
+        return value
 
 
 class ReviewSerializer(serializers.ModelSerializer):

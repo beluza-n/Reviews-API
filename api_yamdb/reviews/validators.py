@@ -10,5 +10,3 @@ def title_year_validation(value):
         raise ValidationError('Год должен быть заполнен!')
     if value > current_year:
         raise ValidationError('Год выпуска не может быть больше текущего!')
-
-
