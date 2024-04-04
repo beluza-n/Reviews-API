@@ -8,6 +8,11 @@ Authors:
 Group project during training at Yandex Prakticum. Uses Django Rest Framework.
 The project collects user reviews of various works of art. User can register, create review for a book / film / movie, comment reviews of other users.
 
+## Stack:
+* Python
+* Django Rest Framework
+* JWT
+
 ### How to run the project:
 Clone repository and go to it with the terminal::
 
