@@ -1,26 +1,25 @@
-# api_yamdb
-api_yamdb
+# Reviews API
 Authors:
 * gatart (Teamlead, Auth/Users)
 * beluza-n (Categories/Genres/Titles)
 * Vladimir-V-K (Review/Comments)
 
-## Описание
-Групповой проект ао заданию Яндекс Практикума.    
-Проект YaMDb собирает отзывы пользователей на различные произведения.
+## Desicription
+Group project of three developers.
+The project collects user reviews of various works.
 
-### Как запустить проект:
-Клонировать репозиторий и перейти в него в командной строке:
-
-```
-git clone https://github.com/gatart/api_yamdb
-```
+### How to run the project:
+Clone repository and go to it with the terminal::
 
 ```
-cd api_yamdb
+git clone https://github.com/beluza-n/Reviews-API.git
 ```
 
-Cоздать и активировать виртуальное окружение:
+```
+cd Reviews-API
+```
+
+Create and activate virtual environment:
 
 ```
 python -m venv venv
@@ -30,36 +29,36 @@ python -m venv venv
 source venv/Scripts/activate
 ```
 
-Обновить пакетный менеджер pip:
+Update pip (optional):
 
 ```
 python -m pip install --upgrade pip
 ```
 
-Установить зависимости из файла requirements.txt:
+Install dependencies from the requirements.txt:
 
 ```
 pip install -r requirements.txt
 ```
 
-Выполнить миграции:
+Run migrations:
 
 ```
 python manage.py migrate
 ```
 
-Запустить проект:
+Launch the Django project:
 
 ```
 python manage.py runserver
 ```
 
-## Примеры API запросов
+## API request examples
 
-### Получить код подтверждения / Зарегистрироваться
-Необходимо отправить POST запрос по пути `/api/v1/auth/signup/`.   
-Код подтверждения придёт на почту.  
-Запрос к серверу:
+### Get confirmation code / Register
+You must send a POST request to the path `/api/v1/auth/signup/`.
+A confirmation code will be sent by email.
+Request to the server:
 ```json
 {
 "email": "user@example.com",
@@ -67,28 +66,28 @@ python manage.py runserver
 }
 ```
 
-Ответ сервера:
+Server response:
 ```json
 {
 "email": "string",
 "username": "string"
 }
 ```
-### Получить токен
-Необходимо отправить GET запрос по пути `/api/v1/auth/token/`.  
-Запрос к серверу:
+### Get a token
+You need to send a GET request to the path `/api/v1/auth/token/`.
+Request to the server:
 ```json
 {
 "username": "string",
 "confirmation_code": "string"
 }
 ```
-Ответ сервера:
+Server response:
 ```json
 {
 "token": "string"
 }
 ```
-### Другие запросы
-Ознакомиться с другими запросами можно в документации к API по пути
+### Other requests
+You can find other requests in the API documentation:
 `/redoc/`
